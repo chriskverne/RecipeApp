@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Test from './components/test';
 
 export default function Home() {
   const [meals, setMeals] = useState([]);
@@ -62,6 +63,7 @@ export default function Home() {
 
   return (
     <main className="p-4">
+      <Test />
       <div className="mb-4">
         <input
           type="text"
