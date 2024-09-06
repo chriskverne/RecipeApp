@@ -1,114 +1,73 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Test from './components/test';
 
 export default function Home() {
-  const [meals, setMeals] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [categories, setCategories] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [recipes, setRecipes] = useState([]);
+  const [inputQuery, setInputQuery] = useState(''); 
+  const [searchQuery, setSearchQuery] = useState(''); 
+  const [loading, setLoading] = useState(false);
 
-  // Fetch categories on component mount
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await fetch('/api/categories');
-        const data = await response.json();
-        if (data.categories) {
-          setCategories(data.categories);
-        }
-      } catch (error) {
-        console.error('Failed to fetch categories:', error);
-      }
-    };
-
-    fetchCategories();
-  }, []);
-
-  const fetchMealBySearch = async () => {
+  // Fetch recipes based on searchQuery from your own backend
+  const fetchRecipes = async () => {
+    setLoading(true);
     try {
-      const response = await fetch(`/api/meal?meal=${searchTerm}`);
+      const response = await fetch(`/api/meal?q=${searchQuery}`);
+      if (!response.ok) 
+        throw new Error(`Error: ${response.status}`);
+      
       const data = await response.json();
-      if (data.meals) {
-        setMeals(data.meals);
+      if (data.hits) {
+        setRecipes(data.hits); // The API returns an array of recipe "hits"
       } else {
-        setMeals([]);
+        setRecipes([]); // If no recipes are returned, set an empty array
       }
+      setLoading(false);
     } catch (error) {
-      console.error('Failed to fetch meal:', error);
+      setLoading(false);
     }
   };
 
-  // Use useEffect to fetch meals when the selectedCategory changes
+  // This effect will run every time `searchQuery` changes
   useEffect(() => {
-    const fetchMealsByCategory = async () => {
-      if (selectedCategory) {
-        try {
-          const response = await fetch(`https://www.themealdb.com/api/json/v1/1/filter.php?c=${selectedCategory}`);
-          const data = await response.json();
-          if (data.meals) {
-            setMeals(data.meals);
-          } else {
-            setMeals([]);
-          }
-        } catch (error) {
-          console.error('Failed to fetch meals by category:', error);
-        }
-      }
-    };
+    if (searchQuery) {
+      fetchRecipes();
+    }
+  }, [searchQuery]);
 
-    fetchMealsByCategory();
-  }, [selectedCategory]); // Trigger the effect whenever selectedCategory changes
+  const handleSearch = () => {
+    setSearchQuery(inputQuery); // Update the search query when the button is clicked
+  };
 
   return (
-    <main className="p-4">
-      <Test />
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search for a meal"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="p-2 border"
-        />
-        <button onClick={fetchMealBySearch} className="ml-2 p-2 bg-blue-500 text-white">
-          Search Meal
-        </button>
-      </div>
+    <main className="">
+      <h1>Recipe Search</h1>
+      <input
+        type="text"
+        value={inputQuery}
+        onChange={(e) => setInputQuery(e.target.value)}
+        placeholder="Search for a recipe"
+      />
+      <button onClick={handleSearch}>Search</button>
 
-      <div className="mb-4">
-        <select
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
-          className="p-2 border"
-        >
-          <option value="">Select a category</option>
-          {categories.map((category) => (
-            <option key={category.idCategory} value={category.strCategory}>
-              {category.strCategory}
-            </option>
-          ))}
-        </select>
-      </div>
+      {loading && <p>Loading...</p>}
 
-      {meals.length > 0 && (
-        <div className="mt-4">
-          {meals.map((meal, index) => (
-            <div key={index} className="mb-4">
-              <h2>{meal.strMeal}</h2>
-              <img src={meal.strMealThumb} alt={meal.strMeal} width={200} />
-              {meal.strInstructions && <p>{meal.strInstructions}</p>}
+      <div>
+        {recipes && recipes.length > 0 ? (
+          recipes.map((recipe, index) => (
+            <div key={index}>
+              <h3>{recipe.recipe.label}</h3>
+              <img src={recipe.recipe.image} alt={recipe.recipe.label} />
+              <p>{recipe.recipe.source}</p>
+              <a href={recipe.recipe.url} target="_blank" rel="noopener noreferrer">
+                View Recipe
+              </a>
             </div>
-          ))}
-        </div>
-      )}
-
-      {meals.length === 0 && (searchTerm || selectedCategory) && (
-        <div className="mt-4">
-          <p>No meal found. Try a different search term or category.</p>
-        </div>
-      )}
+          ))
+        ) : (
+          <p>No recipes found</p>
+        )}
+      </div>
     </main>
   );
 }
