@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
 export default function Home() {
@@ -41,6 +42,10 @@ export default function Home() {
 
   return (
     <main className="">
+      <div className='w-full flex justify-center mt-8 bg-red-500'>
+        <Link href={'/inventory'}>Link to inventory page</Link>
+      </div>
+
       <h1>Recipe Search</h1>
       <input
         type="text"
