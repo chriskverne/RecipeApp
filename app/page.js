@@ -1,78 +1,103 @@
-'use client';
+"use client"
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
-import Link from 'next/link';
-import { useState, useEffect } from 'react';
+const Login = () => {
+  const router = useRouter();
+  const [isLogin, setIsLogin] = useState(true);
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-export default function Home() {
-  const [recipes, setRecipes] = useState([]);
-  const [inputQuery, setInputQuery] = useState(''); 
-  const [searchQuery, setSearchQuery] = useState(''); 
-  const [loading, setLoading] = useState(false);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
 
-  // Fetch recipes based on searchQuery from your own backend
-  const fetchRecipes = async () => {
-    setLoading(true);
     try {
-      const response = await fetch(`/api/meal?q=${searchQuery}`);
-      if (!response.ok) 
-        throw new Error(`Error: ${response.status}`);
-      
-      const data = await response.json();
-      if (data.hits) {
-        setRecipes(data.hits); // The API returns an array of recipe "hits"
+      if (isLogin) {
+        // Login request
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (res.ok) {
+          router.push('/inventory');
+        } else {
+          setError('Invalid username or password');
+        }
       } else {
-        setRecipes([]); // If no recipes are returned, set an empty array
+        // Register request
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password }),
+        });
+
+        if (res.ok) {
+          setIsLogin(true);
+          setError('Registration successful! Please log in.');
+        } else {
+          setError('Username already exists');
+        }
       }
-      setLoading(false);
-    } catch (error) {
-      setLoading(false);
+    } catch (err) {
+      setError('Something went wrong');
     }
-  };
-
-  // This effect will run every time `searchQuery` changes
-  useEffect(() => {
-    if (searchQuery) {
-      fetchRecipes();
-    }
-  }, [searchQuery]);
-
-  const handleSearch = () => {
-    setSearchQuery(inputQuery); // Update the search query when the button is clicked
   };
 
   return (
-    <main className="">
-      <div className='w-full flex justify-center mt-8 bg-red-500'>
-        <Link href={'/inventory'}>Link to inventory page</Link>
-      </div>
+    <main className="min-h-screen bg-gray-100 py-12 px-4">
+      <div className="max-w-md mx-auto bg-white rounded-lg shadow p-8">
+        <h1 className="text-2xl font-bold mb-6 text-center">
+          {isLogin ? 'Login' : 'Create Account'}
+        </h1>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="mt-1 block w-full rounded border-gray-300 shadow-sm p-2"
+              required
+            />
+          </div>
 
-      <h1>Recipe Search</h1>
-      <input
-        type="text"
-        value={inputQuery}
-        onChange={(e) => setInputQuery(e.target.value)}
-        placeholder="Search for a recipe"
-      />
-      <button onClick={handleSearch}>Search</button>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full rounded border-gray-300 shadow-sm p-2"
+              required
+            />
+          </div>
 
-      {loading && <p>Loading...</p>}
+          {error && (
+            <p className="text-red-500 text-sm">{error}</p>
+          )}
 
-      <div>
-        {recipes && recipes.length > 0 ? (
-          recipes.map((recipe, index) => (
-            <div key={index}>
-              <h3>{recipe.recipe.label}</h3>
-              <img src={recipe.recipe.image} alt={recipe.recipe.label} />
-              <p>{recipe.recipe.source}</p>
-              <a href={recipe.recipe.url} target="_blank" rel="noopener noreferrer">
-                View Recipe
-              </a>
-            </div>
-          ))
-        ) : (
-          <p>No recipes found</p>
-        )}
+          <button
+            type="submit"
+            className="w-full bg-blue-500 text-white rounded py-2 px-4 hover:bg-blue-600"
+          >
+            {isLogin ? 'Login' : 'Create Account'}
+          </button>
+        </form>
+
+        <button
+          onClick={() => setIsLogin(!isLogin)}
+          className="mt-4 text-sm text-blue-500 hover:underline w-full text-center"
+        >
+          {isLogin ? 'Need an account? Sign up' : 'Already have an account? Login'}
+        </button>
       </div>
     </main>
   );
-}
+};
+
+export default Login;
